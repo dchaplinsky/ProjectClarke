@@ -1,9 +1,10 @@
 import pyorient
 import dsnparse
+from .migration_manager import MigrationManager
 
 
 class OrientDatabase:
-    def __init__(self, dsn):
+    def __init__(self, dsn, migrations_dir=None):
         r = dsnparse.parse(dsn)
 
         self.client = pyorient.OrientDB(r.host or "localhost", r.port or 2424)
@@ -11,6 +12,14 @@ class OrientDatabase:
 
         self.db = None
         self.parsed_dsn = r
+
+        self.migration_manager = None
+
+        if self.parsed_dsn.dbname:
+            self.ensure_db_from_dsn()
+
+            if migrations_dir is not None:
+                self.init_migration_manager(migrations_dir)
 
     def ensure_db_from_dsn(self):
         assert self.parsed_dsn.dbname, "You should specify database name"
@@ -41,8 +50,9 @@ class OrientDatabase:
 
     def init_migrations(self):
         self.client.command("CREATE CLASS Migration")
-        self.client.command("CREATE PROPERTY Migration.name STRING")
-        self.client.command("CREATE PROPERTY Migration.applied BOOLEAN")
+        self.client.command("CREATE PROPERTY Migration.name STRING (MANDATORY TRUE)")
+        self.client.command("CREATE PROPERTY Migration.applied BOOLEAN (MANDATORY TRUE)")
 
-    def migrate(self, migrations_dir):
-        pass
+
+    def init_migration_manager(self, migrations_dir):
+        self.migration_manager = MigrationManager(self.client, migrations_dir)

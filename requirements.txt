@@ -3,3 +3,4 @@ names-translator==1.2.0
 python-Levenshtein==0.12.0
 dsnparse==0.1.12
 Click==7.0
+natsort==6.0.0
