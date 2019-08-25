@@ -80,22 +80,33 @@ class Migration(BaseMigration):
     def _apply(self, migration):
         # TODO: ESCAPING!!!!
 
-        migration.forward()
-        rec = self.client.command(
-            "UPDATE Migration SET name='{}', applied=true UPSERT WHERE name='{}'".format(
-                migration.name, migration.name
+        # SHIT, no transactions for schema change/DML
+        try:
+            migration.forward()
+            rec = self.client.command(
+                "UPDATE Migration SET name='{}', applied=true UPSERT WHERE name='{}'".format(
+                    migration.name, migration.name
+                )
             )
-        )
+        except:
+            migration.backward()
+            raise
+
 
     def _unapply(self, migration):
         # TODO: ESCAPING!!!!
 
-        migration.backward()
-        rec = self.client.command(
-            "UPDATE Migration SET name='{}', applied=false UPSERT WHERE name='{}'".format(
-                migration.name, migration.name
+        try:
+            migration.backward()
+            rec = self.client.command(
+                "UPDATE Migration SET name='{}', applied=false UPSERT WHERE name='{}'".format(
+                    migration.name, migration.name
+                )
             )
-        )
+        except:
+            migration.forward()
+            raise
+
 
     def generate_empty_migration(self, explainer=""):
         migration_names = list(self.fs_migrations.keys())

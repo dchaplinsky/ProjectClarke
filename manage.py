@@ -2,7 +2,9 @@
 
 import click
 import os.path
+from collections import defaultdict, Counter
 from db.api import OrientDatabase
+from db.constants import LANGUAGES, GENDERS, NAME_TYPES
 
 
 @click.group()
@@ -49,6 +51,29 @@ def makemigrations(ctx):
 def migrate(ctx, migration_name):
     db_wrapper = ctx.obj["db_wrapper"]
     db_wrapper.migration_manager.migrate(migration_name)
+
+
+@cli.group("etl")
+@click.pass_context
+def etl(ctx):
+    pass
+
+
+@etl.command()
+@click.pass_context
+@click.argument('language', type=click.Choice(LANGUAGES))
+@click.argument('name_type', type=click.Choice(NAME_TYPES + ["fullname"]), default="fullname")
+@click.argument('gender', type=click.Choice(GENDERS), default="unk")
+@click.option("--source")
+def load_nomenclature(ctx, language, name_type, gender, source):
+    db_wrapper = ctx.obj["db_wrapper"]
+    accum = defaultdict(Counter)
+
+    if name_type == "fullname":
+        if language in ["uk", "ru"]:
+            pass
+
+    print(language, name_type, gender)
 
 
 if __name__ == "__main__":
