@@ -7,10 +7,17 @@ class Migration(BaseMigration):
 
     def backward(self):
         self.client.command("DROP CLASS Name IF EXISTS")
+        self.client.command("DROP CLASS Freq IF EXISTS")
         self.client.command("DROP CLASS Translation IF EXISTS")
 
     def forward(self):
+        self.client.command("CREATE CLASS Freq EXTENDS V")
+        self.client.command("CREATE PROPERTY Freq.classes LONG (MANDATORY TRUE)")
+        self.client.command("CREATE PROPERTY Freq.occurences LONG (MANDATORY TRUE)")
+        self.client.command("CREATE PROPERTY Freq.total LONG (MANDATORY TRUE)")
+
         self.client.command("CREATE CLASS Name EXTENDS V")
+
         self.client.command("CREATE PROPERTY Name.name STRING (MANDATORY TRUE)")
         self.client.command(
             "CREATE PROPERTY Name.normalized_name STRING (MANDATORY TRUE)"
@@ -37,7 +44,8 @@ class Migration(BaseMigration):
             "ALTER PROPERTY Name.sources REGEXP '{}'".format("|".join(SOURCES))
         )
 
-        self.client.command("CREATE PROPERTY Name.nomenclature EMBEDDEDSET STRING")
+        self.client.command("CREATE PROPERTY Name.nomenclatures EMBEDDEDSET STRING")
+        self.client.command("CREATE PROPERTY Name.frequencies EMBEDDEDMAP Freq")
 
         self.client.command(
             "CREATE INDEX names on Name (name, gender, name_type) UNIQUE"

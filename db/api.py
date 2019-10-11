@@ -1,3 +1,4 @@
+import json
 import pyorient
 import dsnparse
 from .migration_manager import MigrationManager
@@ -51,8 +52,43 @@ class OrientDatabase:
     def init_migrations(self):
         self.client.command("CREATE CLASS Migration")
         self.client.command("CREATE PROPERTY Migration.name STRING (MANDATORY TRUE)")
-        self.client.command("CREATE PROPERTY Migration.applied BOOLEAN (MANDATORY TRUE)")
-
+        self.client.command(
+            "CREATE PROPERTY Migration.applied BOOLEAN (MANDATORY TRUE)"
+        )
 
     def init_migration_manager(self, migrations_dir):
         self.migration_manager = MigrationManager(self.client, migrations_dir)
+
+    def put_name(self, name_entity):
+        put_clause = ""
+        for k, v in name_entity.get("frequencies", {}).items():
+            v.update(
+                {"@type":"d", "@class":"Freq"}
+            )
+            put_clause += 'PUT frequencies = "{k}", {v}\n'.format(k=k, v=json.dumps(v))
+
+        command = """
+            UPDATE 
+                Name
+            SET 
+                name="{name}",
+                gender="{gender}",
+                name_type="{name_type}",
+                normalized_name="{normalized_name}"
+            ADD
+                languages="{languages}",
+                sources="{sources}",
+                nomenclatures="{nomenclatures}",
+                sources="{sources}"
+            {put_clause}
+            UPSERT WHERE
+                name="{name}" and
+                gender="{gender}" and
+                name_type="{name_type}"
+            """.format(
+                # frequencies_json=frequencies_json,
+                put_clause=put_clause,
+                **name_entity
+            )
+
+        rec = self.client.command(command)
